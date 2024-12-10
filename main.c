@@ -24,6 +24,10 @@
 // msget, msgsnd, msgrcv
 #include <sys/msg.h>
 
+void procFunctions() {
+
+}
+
 int main(int argc, char *argv[])
 {
   // assuming that every process is a child process
@@ -92,6 +96,26 @@ int main(int argc, char *argv[])
   for (int i = 0; i < 3; i++)
   {
     wait(NULL);
+  }
+
+  // main menu
+  char select;
+  while (1)
+  {
+    printf("\nSelect: ");
+    scanf(" %c", &select);
+    switch (select)
+    {
+    case '1':
+      printf("\nData from file");
+      break;
+    case '2':
+      printf("\nData from stdin");
+      break;
+    default:
+      printf("\nInvalid choice");
+      break;
+    }
   }
 
   printf("\n");
