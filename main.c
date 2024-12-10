@@ -7,7 +7,7 @@
 #include <unistd.h>
 // wait, waitpid
 #include <sys/wait.h>
-//pid_t, key_t and other types
+// pid_t, key_t and other types
 #include <sys/types.h>
 // shmget, shmat, shmdt, shmctl
 #include <sys/shm.h>
@@ -21,12 +21,72 @@
 #include <signal.h>
 // error handling
 #include <errno.h>
-// extra idk if needed
-// messages queues -> lab10
-/*#include <sys/msg.h>*/
+// msget, msgsnd, msgrcv
+#include <sys/msg.h>
 
-int main(int argc, char *argv[]) {
-  printf("%s", argv[1]);
+int main(int argc, char *argv[])
+{
+  // assuming that every process is a child process
+  pid_t processes[3];
+
+  // creating processes
+  // first process
+  processes[0] = fork();
+
+  switch (processes[0])
+  {
+  case -1:
+    printf("\nfork() error->proc1");
+    return 1;
+    break;
+  case 0:
+    // process 1
+      printf("\nProcess 1");
+      exit(0);
+    break;
+
+  default:
+    // main process
+    processes[1] = fork();
+    switch (processes[1])
+    {
+    case -1:
+      printf("\nfork() error->proc2");
+      return 1;
+      break;
+    case 0:
+      // process 2
+      printf("\nProcess 2");
+      exit(0);
+      break;
+    default:
+      // main process
+      // creating third process
+      processes[2] = fork();
+      switch (processes[2])
+      {
+      case -1:
+        printf("\nfork() error->proc3");
+        return 1;
+        break;
+      case 0:
+        // process 3
+        printf("\nProcess 3");
+        exit(0);
+        break;
+      default:
+        break;
+      }
+      break;
+    }
+    break;
+  }
+
+  // waitint for all process to finish
+  for (int i = 0; i < 3; i++)
+  {
+    wait(NULL);
+  }
 
   printf("\n");
   return 0;
