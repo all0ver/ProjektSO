@@ -40,9 +40,9 @@ int main(int argc, char *argv[])
     return 1;
     break;
   case 0:
-    // process 1
-      printf("\nProcess 1");
-      exit(0);
+    // process 1 -> Kamil
+    printf("\nProcess 1");
+    exit(0);
     break;
 
   default:
@@ -55,8 +55,14 @@ int main(int argc, char *argv[])
       return 1;
       break;
     case 0:
-      // process 2
+      // process 2 -> Mateusz
       printf("\nProcess 2");
+      // get data from proc1 -> shm i sem
+      char lineFromProc1[1024];
+      strcpy(lineFromProc1, "for testing");
+      int lineLength = strlen(lineFromProc1);
+      printf("\nLine lenght: %i", lineLength);
+      // send lineLength to proc3 -> msg?
       exit(0);
       break;
     default:
@@ -70,7 +76,7 @@ int main(int argc, char *argv[])
         return 1;
         break;
       case 0:
-        // process 3
+        // process 3 -> Paweł
         printf("\nProcess 3");
         exit(0);
         break;
