@@ -23,17 +23,17 @@
 #include <errno.h>
 // msget, msgsnd, msgrcv
 #include <sys/msg.h>
+#include <semaphore.h>
 
 void P2()
 {
-  // process 2 -> Mateusz
   printf("\nProcess 2");
   // get data from proc1 -> shm i sem
   char lineFromProc1[1024];
   strcpy(lineFromProc1, "for testing");
   int lineLength = strlen(lineFromProc1);
   printf("\nLine lenght: %i", lineLength);
-  // send lineLength to proc3 -> msg?
+  // send lineLength to proc3 -> msg
 }
 
 int main(int argc, char *argv[])
