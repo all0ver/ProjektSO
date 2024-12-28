@@ -1,0 +1,4 @@
+to jest normalne zdanie
+to tez jest normalne zdanie
+a to jest krotsze
+a to nie jest krotsze tylko dluzsze
