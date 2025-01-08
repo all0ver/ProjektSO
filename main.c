@@ -229,10 +229,6 @@ void P1(int semid)
       }
 
       break;
-    case '.':
-      kill(0, SIGTERM);
-
-      break;
     default:
       printf("Nieprawidlowy wybor.\n");
       break;
