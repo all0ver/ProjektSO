@@ -29,16 +29,104 @@ int sid;
 key_t key = 0x283;
 key_t key_msg = 0x284;
 
+// zmienne do sygalow pomiedzy procesami
+sigset_t mask, blocker;
+pid_t p1, p2, p3;
+int pipes[3][2];
+int pom = 0;
+
 // struktura danych do kolejek komunikatów
 struct msgbuf
 {
   long mtype;
   int mdata;
 };
+// osbluga sygnalow
+struct sygnaly
+{
+  int nr_sygnalu;
+} syg;
+void obsluga_1_wywolanie(int sig)
+{
+  switch (syg.nr_sygnalu)
+  {
+  case SIGTERM:
+    raise(SIGTERM);
+    break;
+  case SIGCONT:
+    raise(SIGCONT);
+    break;
+  case SIGSTOP:
+    raise(SIGSTOP);
+    break;
+  }
+}
+void obsluga_3_init(int sig)
+{
+
+  if (kill(getppid(), SIGUSR2) == -1)
+  {
+    perror("error");
+    exit(9);
+  }
+  if (kill(getppid(), sig) == -1)
+  {
+    perror("error");
+    exit(9);
+  }
+}
+void obsluga_main_init(int sig)
+{
+  sigprocmask(SIG_UNBLOCK, &blocker, &mask);
+}
+void obsluga_main(int sig)
+{
+  pom = 0;
+  syg.nr_sygnalu = sig;
+  write(pipes[0][1], &syg, sizeof(syg));
+  write(pipes[1][1], &syg, sizeof(syg));
+  write(pipes[2][1], &syg, sizeof(syg));
+  if (kill(p1, SIGUSR1) == -1)
+  {
+    perror("error");
+    exit(9);
+  }
+}
+void obsluga_1(int sig)
+{
+
+  if (kill(p2, SIGUSR1) == -1)
+  {
+    perror("error");
+    exit(9);
+  }
+  read(pipes[0][0], &syg, sizeof(syg));
+  obsluga_1_wywolanie(sig);
+}
+void obsluga_2(int sig)
+{
+  read(pipes[1][0], &syg, sizeof(syg));
+  if (kill(p3, SIGUSR1) == -1)
+  {
+    perror("error");
+    exit(9);
+  }
+  obsluga_1_wywolanie(sig);
+}
+void obsluga_3(int sig)
+{
+  read(pipes[2][0], &syg, sizeof(syg));
+  obsluga_1_wywolanie(sig);
+}
 
 void P1(int semid)
 {
-  int wybor;
+  // obsluga sygnalow
+  sigset_t mask, blocker;
+  sigfillset(&blocker);
+  sigdelset(&blocker, SIGUSR1);
+  sigprocmask(SIG_SETMASK, &blocker, NULL);
+  char wybor;
   char *tekst = (char *)shmat(sid, NULL, 0);
   if (tekst == (void *)-1)
   {
@@ -49,14 +137,14 @@ void P1(int semid)
   while (1)
   {
     printf("\nWybierz \n1: Wczytywanie elementów z klawiatury, \n2: Wczytywanie z pliku\nWybor: ");
-    scanf(" %d", &wybor);
+    scanf(" %c", &wybor);
 
     // Usunięcie znaku nowej linii pozostającego w buforze po scanf
     getchar();
 
     switch (wybor)
     {
-    case 1:
+    case '1':
       while (1)
       {
         // czekanie az bedzie mozna wpisac dane:
@@ -91,7 +179,7 @@ void P1(int semid)
         }
       }
       break;
-    case 2:
+    case '2':
       char fileName[256];
       printf("Podaj nazwe pliku: ");
       scanf(" %s", fileName);
@@ -141,6 +229,10 @@ void P1(int semid)
       }
 
       break;
+    case '.':
+      kill(0, SIGTERM);
+
+      break;
     default:
       printf("Nieprawidlowy wybor.\n");
       break;
@@ -152,6 +244,11 @@ void P1(int semid)
 
 void P2(int semid, int msgid)
 {
+  // obsluga sygnalow
+  sigset_t mask, blocker;
+  sigfillset(&blocker);
+  sigdelset(&blocker, SIGUSR1);
+  sigprocmask(SIG_SETMASK, &blocker, NULL);
   // wskaznik na pamiec wspoldzelona
   char *tekst = (char *)shmat(sid, NULL, 0);
   while (1)
@@ -185,6 +282,20 @@ void P2(int semid, int msgid)
 
 void P3(int msgid, int semid)
 {
+  // obsluga sygnalow
+
+  sigset_t blocker, mask;
+  sigemptyset(&mask);
+  sigfillset(&blocker);
+  sigdelset(&blocker, SIGTERM);
+  sigdelset(&blocker, SIGTSTP);
+  sigdelset(&blocker, SIGCONT);
+  sigdelset(&blocker, SIGUSR1);
+  sigprocmask(SIG_SETMASK, &blocker, NULL);
+  signal(SIGTERM, obsluga_3_init);
+  signal(SIGCONT, obsluga_3_init);
+  signal(SIGSTOP, obsluga_3_init);
+  signal(SIGUSR1, obsluga_3);
   // odczytanie danych z kolejki komunikatow
   while (1)
   {
@@ -210,6 +321,15 @@ void P3(int msgid, int semid)
 
 int main(int argc, char *argv[])
 {
+  // obsluga sygnalow
+  sigemptyset(&mask);
+  sigfillset(&blocker);
+  sigdelset(&blocker, SIGUSR2);
+  sigprocmask(SIG_BLOCK, &blocker, &mask);
+  signal(SIGUSR2, obsluga_main_init);
+  signal(SIGTERM, obsluga_main);
+  signal(SIGTSTP, obsluga_main);
+  signal(SIGCONT, obsluga_main);
   // potrzebne do -semaforow
   //
   sid = shmget(key, BUFF_S, IPC_CREAT | 0666);
